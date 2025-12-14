@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><!DOCTYPE html>
+        <html lang="de">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Stop Motion Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            background: #f3f4f6;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            gap: 8px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #2563eb, #9333ea);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            color: white;
+            font-size: 24px;
+        }
+
+        .tool-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 24px;
+        }
+
+        .tool-btn.active {
+            background: #2563eb;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .tool-btn:hover:not(.active) {
+            background: #e5e7eb;
+        }
+
+        .divider {
+            width: 40px;
+            height: 1px;
+            background: #e5e7eb;
+            margin: 8px 0;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 24px;
+        }
+
+        .action-btn.export {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .action-btn.export:hover {
+            background: #bbf7d0;
+        }
+
+        .action-btn.delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .action-btn.delete:hover {
+            background: #fecaca;
+        }
+
+        .action-btn.settings {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .action-btn.settings:hover {
+            background: #e5e7eb;
+        }
+
+        .action-btn:disabled {
+            background: #f3f4f6;
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            height: 56px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .window-dot.red { background: #ef4444; }
+        .window-dot.yellow { background: #eab308; }
+        .window-dot.green { background: #10b981; }
+
+        .top-bar-text {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Viewport */
+        .viewport {
+            flex: 1;
+            background: #f9fafb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .viewport-canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1400px;
+            max-height: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+        }
+
+        .viewport-canvas video,
+        .viewport-canvas img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .onion-skin {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+        }
+
+        .placeholder.camera { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+        .placeholder.upload { background: linear-gradient(135deg, #f3f4f6, #dbeafe); }
+        .placeholder.demo { background: linear-gradient(135deg, #faf5ff, #fce7f3); }
+
+        .placeholder-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+        }
+
+        .placeholder-title {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .placeholder-subtitle {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .capture-btn {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 9999px;
+            box-shadow: 0 20px 25px -5px rgba(220, 38, 38, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            transition: all 0.3s;
+            z-index: 20;
+        }
+
+        .capture-btn:hover {
+            background: #b91c1c;
+            transform: translateX(-50%) scale(1.1);
+        }
+
+        .upload-btn-primary {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 24px;
+            transition: background 0.3s;
+        }
+
+        .upload-btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        /* Timeline */
+        .timeline {
+            height: 224px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timeline-controls {
+            height: 56px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .playback-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .playback-btn.play {
+            background: #2563eb;
+            color: white;
+        }
+
+        .playback-btn.play:hover {
+            background: #1d4ed8;
+        }
+
+        .playback-btn.stop {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .playback-btn.stop:hover {
+            background: #d1d5db;
+        }
+
+        .playback-btn:disabled {
+            background: #f3f4f6;
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .frame-counter {
+            font-size: 14px;
+            color: #6b7280;
+            margin-left: 16px;
+        }
+
+        .frame-counter span {
+            color: #111827;
+        }
+
+        .timeline-track {
+            flex: 1;
+            background: #f9fafb;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 24px;
+        }
+
+        .timeline-empty {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d1d5db;
+        }
+
+        .frame-item {
+            position: relative;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .frame-item:hover {
+            transform: scale(1.05);
+        }
+
+        .frame-item.active {
+            transform: scale(1.1);
+        }
+
+        .frame-thumbnail {
+            width: 144px;
+            height: 96px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #d1d5db;
+            transition: border-color 0.3s;
+        }
+
+        .frame-item.active .frame-thumbnail {
+            border-color: #2563eb;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .frame-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .frame-number {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .frame-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .frame-item:hover .frame-actions {
+            opacity: 1;
+        }
+
+        .frame-action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
+        }
+
+        .frame-action-btn.duplicate {
+            background: rgba(37, 99, 235, 0.9);
+            color: white;
+        }
+
+        .frame-action-btn.delete {
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+        }
+
+        .playhead {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #2563eb;
+        }
+
+        /* Properties Panel */
+        .properties {
+            width: 320px;
+            background: white;
+            border-left: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .properties-header {
+            height: 56px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .properties-header h2 {
+            color: #111827;
+            font-size: 16px;
+        }
+
+        .properties-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .property-section {
+            margin-bottom: 24px;
+        }
+
+        .property-section h3 {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .property-card {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .property-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .property-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-label {
+            color: #6b7280;
+        }
+
+        .property-value {
+            color: #111827;
+        }
+
+        .fps-slider {
+            width: 100%;
+            margin: 8px 0;
+            accent-color: #2563eb;
+        }
+
+        .fps-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .fps-preset {
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            background: #f3f4f6;
+            color: #374151;
+            transition: all 0.3s;
+        }
+
+        .fps-preset.active {
+            background: #2563eb;
+            color: white;
+        }
+
+        .fps-preset:hover:not(.active) {
+            background: #e5e7eb;
+        }
+
+        .onion-toggle {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .onion-toggle.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .onion-toggle:not(.active) {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .onion-toggle:hover:not(.active) {
+            background: #e5e7eb;
+        }
+
+        .tips-card {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .tips-card p {
+            margin-bottom: 8px;
+        }
+
+        .tips-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .frame-preview {
+            background: #f9fafb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .frame-preview img {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+        }
+
+        .frame-info {
+            padding: 12px;
+        }
+
+        .frame-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .frame-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .frame-info-row .label {
+            color: #6b7280;
+        }
+
+        .frame-info-row .value {
+            color: #111827;
+            font-family: monospace;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">🎬</div>
+
+        <button class="tool-btn active" data-tool="camera" title="Kamera">📷</button>
+        <button class="tool-btn" data-tool="upload" title="Upload">📤</button>
+        <button class="tool-btn" data-tool="demo" title="Demo">✨</button>
+
+        <div class="sidebar-bottom">
+            <div class="divider"></div>
+            <button class="action-btn export" id="exportBtn" title="Exportieren">💾</button>
+            <button class="action-btn delete" id="clearBtn" title="Alle löschen">🗑️</button>
+            <button class="action-btn settings" title="Einstellungen">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="window-controls">
+                <div class="window-dot red"></div>
+                <div class="window-dot yellow"></div>
+                <div class="window-dot green"></div>
+            </div>
+            <div class="top-bar-text" id="modeText">Kamera</div>
+            <div class="top-bar-text" id="frameInfo">Kein Frame</div>
+        </div>
+
+        <!-- Viewport -->
+        <div class="viewport">
+            <div class="viewport-canvas">
+                <img id="onionSkin" class="onion-skin" style="display: none;">
+                <video id="cameraVideo" autoplay playsinline muted style="display: none;"></video>
+                <img id="playbackImage" style="display: none;">
+
+                <div id="placeholderCamera" class="placeholder camera">
+                    <div class="placeholder-icon">📷</div>
+                    <div class="placeholder-title">Kamera</div>
+                    <div class="placeholder-subtitle">Live-Aufnahme</div>
+                </div>
+
+                <div id="placeholderUpload" class="placeholder upload" style="display: none;">
+                    <div class="placeholder-icon">📤</div>
+                    <div class="placeholder-title">Bilder hochladen</div>
+                    <div class="placeholder-subtitle">Wähle Bilder von deinem Computer</div>
+                    <button class="upload-btn-primary" onclick="document.getElementById('fileInput').click()">Dateien auswählen</button>
+                </div>
+
+                <div id="placeholderDemo" class="placeholder demo" style="display: none;">
+                    <div class="placeholder-icon">✨</div>
+                    <div class="placeholder-title">Demo-Modus</div>
+                    <div class="placeholder-subtitle">Erstelle bunte Demo-Frames zum Testen</div>
+                </div>
+
+                <button id="captureBtn" class="capture-btn" style="display: none;">
+                    <span id="captureBtnIcon">📷</span>
+                    <span id="captureBtnText">Aufnehmen</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline">
+            <div class="timeline-controls">
+                <div class="playback-controls">
+                    <button class="playback-btn play" id="playBtn" disabled>▶️</button>
+                    <button class="playback-btn stop" id="stopBtn" disabled>⏹️</button>
+                    <div class="frame-counter">
+                        <span id="currentFrameNum">0</span> / <span id="totalFrames">0</span>
+                    </div>
+                </div>
+                <div class="top-bar-text">Timeline</div>
+            </div>
+            <div class="timeline-track" id="timelineTrack">
+                <div class="timeline-empty">Keine Frames vorhanden - Erstelle dein erstes Frame</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="properties">
+        <div class="properties-header">
+            <h2>Eigenschaften</h2>
+        </div>
+        <div class="properties-content">
+            <!-- Project Info -->
+            <div class="property-section">
+                <h3>Projekt</h3>
+                <div class="property-card">
+                    <div class="property-row">
+                        <span class="property-label">Frames:</span>
+                        <span class="property-value" id="propFrameCount">0</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">Dauer:</span>
+                        <span class="property-value" id="propDuration">0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FPS -->
+            <div class="property-section">
+                <h3>📊 Bildrate</h3>
+                <div class="property-row" style="margin-bottom: 8px;">
+                    <span class="property-label">FPS</span>
+                    <span class="property-value" style="color: #2563eb;" id="fpsValue">12</span>
+                </div>
+                <input type="range" class="fps-slider" id="fpsSlider" min="6" max="30" value="12">
+                <div class="fps-presets">
+                    <button class="fps-preset" data-fps="6">6</button>
+                    <button class="fps-preset active" data-fps="12">12</button>
+                    <button class="fps-preset" data-fps="15">15</button>
+                    <button class="fps-preset" data-fps="24">24</button>
+                    <button class="fps-preset" data-fps="30">30</button>
+                </div>
+            </div>
+
+            <!-- Onion Skin -->
+            <div class="property-section">
+                <h3>👁️ Onion Skinning</h3>
+                <button class="onion-toggle active" id="onionToggle">
+                    <span>👁️</span>
+                    <span id="onionToggleText">Aktiviert</span>
+                </button>
+                <div id="onionOpacityControl" style="margin-top: 16px;">
+                    <div class="property-row" style="margin-bottom: 8px;">
+                        <span class="property-label">Transparenz</span>
+                        <span class="property-value" style="color: #2563eb;" id="opacityValue">30%</span>
+                    </div>
+                    <input type="range" class="fps-slider" id="opacitySlider" min="10" max="80" value="30">
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="property-section">
+                <h3>Tipps</h3>
+                <div class="tips-card">
+                    <p>💡 Verwende Onion Skinning, um das vorherige Frame zu sehen</p>
+                    <p>⚡ Erhöhe die FPS für flüssigere Animationen</p>
+                    <p>🎬 Dupliziere Frames für längere Pausen</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple>
+<canvas id="captureCanvas"></canvas>
+
+<script>
+    // State
+    let frames = [];
+    let currentFrameIndex = -1;
+    let isPlaying = false;
+    let fps = 12;
+    let showOnionSkin = true;
+    let onionSkinOpacity = 0.3;
+    let selectedTool = 'camera';
+    let playbackInterval = null;
+    let stream = null;
+
+    // Elements
+    const cameraVideo = document.getElementById('cameraVideo');
+    const captureCanvas = document.getElementById('captureCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const fileInput = document.getElementById('fileInput');
+    const timelineTrack = document.getElementById('timelineTrack');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const onionSkinImg = document.getElementById('onionSkin');
+    const playbackImage = document.getElementById('playbackImage');
+
+    // Initialize camera
+    async function initCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 1920, height: 1080 }
+            });
+            cameraVideo.srcObject = stream;
+            cameraVideo.style.display = 'block';
+            document.getElementById('placeholderCamera').style.display = 'none';
+            captureBtn.style.display = 'flex';
+        } catch (error) {
+            console.error('Camera error:', error);
+            document.getElementById('placeholderCamera').innerHTML = `
+                    <div class="placeholder-icon">📷❌</div>
+                    <div class="placeholder-title">Kamera nicht verfügbar</div>
+                    <div class="placeholder-subtitle">Bitte erlaube den Kamera-Zugriff</div>
+                `;
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        cameraVideo.style.display = 'none';
+    }
+
+    // Tool Selection
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedTool = this.dataset.tool;
+            updateViewport();
+        });
+    });
+
+    function updateViewport() {
+        stopCamera();
+        document.querySelectorAll('.placeholder').forEach(p => p.style.display = 'none');
+        captureBtn.style.display = 'none';
+
+        if (isPlaying) return;
+
+        const modeText = document.getElementById('modeText');
+        const captureBtnIcon = document.getElementById('captureBtnIcon');
+        const captureBtnText = document.getElementById('captureBtnText');
+
+        if (selectedTool === 'camera') {
+            modeText.textContent = 'Kamera';
+            initCamera();
+            captureBtnIcon.textContent = '📷';
+            captureBtnText.textContent = 'Aufnehmen';
+        } else if (selectedTool === 'upload') {
+            modeText.textContent = 'Upload';
+            document.getElementById('placeholderUpload').style.display = 'flex';
+            captureBtn.style.display = 'flex';
+            captureBtnIcon.textContent = '📤';
+            captureBtnText.textContent = 'Hochladen';
+        } else if (selectedTool === 'demo') {
+            modeText.textContent = 'Demo';
+            document.getElementById('placeholderDemo').style.display = 'flex';
+            captureBtn.style.display = 'flex';
+            captureBtnIcon.textContent = '✨';
+            captureBtnText.textContent = 'Demo-Frame';
+        }
+    }
+
+    // Capture
+    captureBtn.addEventListener('click', function() {
+        if (selectedTool === 'upload') {
+            fileInput.click();
+        } else if (selectedTool === 'camera') {
+            captureFrame();
+        } else if (selectedTool === 'demo') {
+            captureDemoFrame();
+        }
+    });
+
+    function captureFrame() {
+        const ctx = captureCanvas.getContext('2d');
+        captureCanvas.width = cameraVideo.videoWidth;
+        captureCanvas.height = cameraVideo.videoHeight;
+        ctx.drawImage(cameraVideo, 0, 0);
+        const imageData = captureCanvas.toDataURL('image/png');
+        addFrame(imageData);
+    }
+
+    function captureDemoFrame() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+
+        const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        ctx.fillStyle = randomColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 80px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Demo Frame', canvas.width / 2, canvas.height / 2 - 40);
+        ctx.font = '40px sans-serif';
+        ctx.fillText(new Date().toLocaleTimeString('de-DE'), canvas.width / 2, canvas.height / 2 + 40);
+
+        const imageData = canvas.toDataURL('image/png');
+        addFrame(imageData);
+    }
+
+    fileInput.addEventListener('change', function(e) {
+        Array.from(e.target.files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => addFrame(ev.target.result);
+                reader.readAsDataURL(file);
+            }
+        });
+        fileInput.value = '';
+    });
+
+    function addFrame(imageData) {
+        const frame = {
+            id: Date.now().toString(),
+            imageData: imageData,
+            timestamp: Date.now()
+        };
+        frames.push(frame);
+        currentFrameIndex = frames.length - 1;
+        updateTimeline();
+        updateProperties();
+        updateOnionSkin();
+    }
+
+    function deleteFrame(id) {
+        const index = frames.findIndex(f => f.id === id);
+        frames = frames.filter(f => f.id !== id);
+        if (currentFrameIndex >= frames.length) {
+            currentFrameIndex = frames.length - 1;
+        }
+        updateTimeline();
+        updateProperties();
+        updateOnionSkin();
+    }
+
+    function duplicateFrame(id) {
+        const frame = frames.find(f => f.id === id);
+        if (frame) {
+            const newFrame = {
+                id: Date.now().toString(),
+                imageData: frame.imageData,
+                timestamp: Date.now()
+            };
+            const index = frames.findIndex(f => f.id === id);
+            frames.splice(index + 1, 0, newFrame);
+            updateTimeline();
+            updateProperties();
+        }
+    }
+
+    function updateTimeline() {
+        if (frames.length === 0) {
+            timelineTrack.innerHTML = '<div class="timeline-empty">Keine Frames vorhanden - Erstelle dein erstes Frame</div>';
+            playBtn.disabled = true;
+            stopBtn.disabled = true;
+            document.getElementById('exportBtn').disabled = true;
+            document.getElementById('clearBtn').disabled = true;
+            return;
+        }
+
+        playBtn.disabled = false;
+        stopBtn.disabled = false;
+        document.getElementById('exportBtn').disabled = false;
+        document.getElementById('clearBtn').disabled = false;
+
+        timelineTrack.innerHTML = frames.map((frame, index) => `
+                <div class="frame-item ${currentFrameIndex === index ? 'active' : ''}" data-index="${index}">
+                    <div class="frame-thumbnail">
+                        <img src="${frame.imageData}" alt="Frame ${index + 1}">
+                    </div>
+                    <div class="frame-number">#${index + 1}</div>
+                    ${currentFrameIndex === index ? '<div class="playhead"></div>' : ''}
+                    <div class="frame-actions">
+                        <button class="frame-action-btn duplicate" onclick="duplicateFrame('${frame.id}')">📋</button>
+                        <button class="frame-action-btn delete" onclick="deleteFrame('${frame.id}')">❌</button>
+                    </div>
+                </div>
+            `).join('');
+
+        // Add click listeners
+        document.querySelectorAll('.frame-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (!isPlaying) {
+                    currentFrameIndex = parseInt(this.dataset.index);
+                    updateTimeline();
+                    updateOnionSkin();
+                    updateProperties();
+                }
+            });
+        });
+
+        // Update counters
+        document.getElementById('currentFrameNum').textContent = currentFrameIndex + 1;
+        document.getElementById('totalFrames').textContent = frames.length;
+        document.getElementById('frameInfo').textContent = `Frame ${currentFrameIndex + 1} / ${frames.length}`;
+    }
+
+    function updateProperties() {
+        document.getElementById('propFrameCount').textContent = frames.length;
+        document.getElementById('propDuration').textContent = frames.length > 0
+            ? `${(frames.length / fps).toFixed(2)}s`
+            : '0s';
+    }
+
+    function updateOnionSkin() {
+        if (showOnionSkin && currentFrameIndex > 0 && !isPlaying) {
+            const prevFrame = frames[currentFrameIndex - 1];
+            onionSkinImg.src = prevFrame.imageData;
+            onionSkinImg.style.opacity = onionSkinOpacity;
+            onionSkinImg.style.display = 'block';
+        } else {
+            onionSkinImg.style.display = 'none';
+        }
+    }
+
+    // Playback
+    playBtn.addEventListener('click', function() {
+        if (isPlaying) {
+            pausePlayback();
+        } else {
+            startPlayback();
+        }
+    });
+
+    stopBtn.addEventListener('click', stopPlayback);
+
+    function startPlayback() {
+        if (frames.length === 0) return;
+        isPlaying = true;
+        currentFrameIndex = 0;
+        playBtn.textContent = '⏸️';
+
+        // Hide camera/placeholders
+        stopCamera();
+        document.querySelectorAll('.placeholder').forEach(p => p.style.display = 'none');
+        captureBtn.style.display = 'none';
+        onionSkinImg.style.display = 'none';
+        playbackImage.style.display = 'block';
+
+        updatePlaybackFrame();
+        playbackInterval = setInterval(() => {
+            currentFrameIndex++;
+            if (currentFrameIndex >= frames.length) {
+                currentFrameIndex = 0;
+            }
+            updatePlaybackFrame();
+        }, 1000 / fps);
+    }
+
+    function pausePlayback() {
+        isPlaying = false;
+        clearInterval(playbackInterval);
+        playBtn.textContent = '▶️';
+    }
+
+    function stopPlayback() {
+        pausePlayback();
+        currentFrameIndex = -1;
+        playbackImage.style.display = 'none';
+        updateViewport();
+        updateTimeline();
+        document.getElementById('frameInfo').textContent = 'Kein Frame';
+    }
+
+    function updatePlaybackFrame() {
+        if (currentFrameIndex >= 0 && currentFrameIndex < frames.length) {
+            playbackImage.src = frames[currentFrameIndex].imageData;
+            updateTimeline();
+        }
+    }
+
+    // FPS Control
+    document.getElementById('fpsSlider').addEventListener('input', function() {
+        fps = parseInt(this.value);
+        document.getElementById('fpsValue').textContent = fps;
+        updateFpsPresets();
+        updateProperties();
+    });
+
+    document.querySelectorAll('.fps-preset').forEach(btn => {
+        btn.addEventListener('click', function() {
+            fps = parseInt(this.dataset.fps);
+            document.getElementById('fpsSlider').value = fps;
+            document.getElementById('fpsValue').textContent = fps;
+            updateFpsPresets();
+            updateProperties();
+        });
+    });
+
+    function updateFpsPresets() {
+        document.querySelectorAll('.fps-preset').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.fps) === fps);
+        });
+    }
+
+    // Onion Skin Control
+    document.getElementById('onionToggle').addEventListener('click', function() {
+        showOnionSkin = !showOnionSkin;
+        this.classList.toggle('active', showOnionSkin);
+        document.getElementById('onionToggleText').textContent = showOnionSkin ? 'Aktiviert' : 'Deaktiviert';
+        document.getElementById('onionOpacityControl').style.display = showOnionSkin ? 'block' : 'none';
+        updateOnionSkin();
+    });
+
+    document.getElementById('opacitySlider').addEventListener('input', function() {
+        onionSkinOpacity = parseInt(this.value) / 100;
+        document.getElementById('opacityValue').textContent = this.value + '%';
+        updateOnionSkin();
+    });
+
+    // Export
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        alert(`Export würde Animation mit ${frames.length} Frames bei ${fps} FPS erstellen`);
+    });
+
+    // Clear
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        if (confirm('Alle Frames löschen?')) {
+            frames = [];
+            currentFrameIndex = -1;
+            stopPlayback();
+            updateTimeline();
+            updateProperties();
+            updateOnionSkin();
+        }
+    });
+
+    // Initialize
+    updateViewport();
+    updateProperties();
+</script>
+</body>
+</html>
