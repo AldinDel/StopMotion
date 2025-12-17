@@ -78,9 +78,9 @@ function stopCamera() {
 // ========================================
 
 // Event Listener für Werkzeug-Buttons (Kamera, Upload, Demo)
-document.querySelectorAll('.tool-btn').forEach(btn => {
+document.querySelectorAll('.tool-btn:not(.logo-btn)').forEach(btn => {
     btn.addEventListener('click', function() {
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tool-btn:not(.logo-btn)').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         selectedTool = this.dataset.tool;
         updateViewport();
