@@ -12,15 +12,15 @@
     <div class="sidebar">
         <div class="logo">🎬</div>
 
-        <button class="tool-btn active" data-tool="camera" title="Kamera">📷</button>
-        <button class="tool-btn" data-tool="upload" title="Upload">📤</button>
-        <button class="tool-btn" data-tool="demo" title="Demo">✨</button>
+        <button class="tool-btn active" data-tool="camera" title="Kamera" aria-label="Kamera-Modus">📷</button>
+        <button class="tool-btn" data-tool="upload" title="Upload" aria-label="Bilder hochladen">📤</button>
+        <button class="tool-btn" data-tool="demo" title="Demo" aria-label="Demo-Modus">✨</button>
 
         <div class="sidebar-bottom">
             <div class="divider"></div>
-            <button class="action-btn export" id="exportBtn" title="Exportieren">💾</button>
-            <button class="action-btn delete" id="clearBtn" title="Alle löschen">🗑️</button>
-            <button class="action-btn settings" id="settingsBtn" title="Einstellungen">⚙️</button>
+            <button class="action-btn export" id="exportBtn" title="Exportieren" aria-label="Animation exportieren">💾</button>
+            <button class="action-btn delete" id="clearBtn" title="Alle löschen" aria-label="Alle Frames löschen">🗑️</button>
+            <button class="action-btn settings" id="settingsBtn" title="Einstellungen" aria-label="Einstellungen öffnen">⚙️</button>
         </div>
     </div>
 
@@ -69,9 +69,9 @@
         <div class="timeline">
             <div class="timeline-controls">
                 <div class="playback-controls">
-                    <button class="playback-btn play" id="playBtn" disabled>▶️</button>
-                    <button class="playback-btn stop" id="stopBtn" disabled>⏹️</button>
-                    <div class="frame-counter">
+                    <button class="playback-btn play" id="playBtn" disabled aria-label="Animation abspielen">▶️</button>
+                    <button class="playback-btn stop" id="stopBtn" disabled aria-label="Animation stoppen">⏹️</button>
+                    <div class="frame-counter" aria-live="polite">
                         <span id="currentFrameNum">0</span> / <span id="totalFrames">0</span>
                     </div>
                 </div>
@@ -150,8 +150,8 @@
     </div>
 </div>
 
-<input type="file" id="fileInput" accept="image/*" multiple>
-<canvas id="captureCanvas"></canvas>
+<input type="file" id="fileInput" accept="image/*" multiple aria-label="Bilddateien auswählen">
+<canvas id="captureCanvas" aria-hidden="true"></canvas>
 
 <!-- Error Modal -->
 <div id="errorModal" class="modal" style="display: none;">

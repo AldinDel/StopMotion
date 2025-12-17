@@ -11,6 +11,7 @@ let onionSkinOpacity = 0.3;         // Transparenz des Onion Skin Overlays
 let selectedTool = 'camera';        // Aktuell ausgewähltes Werkzeug (camera/upload/demo)
 let playbackInterval = null;        // Intervall für die Wiedergabe-Animation
 let stream = null;                  // MediaStream für Kamera-Video
+const MAX_FRAMES = 500;             // Maximale Anzahl von Frames (Memory Protection)
 
 // ========================================
 // DOM Elements
@@ -19,6 +20,8 @@ let stream = null;                  // MediaStream für Kamera-Video
 const cameraVideo = document.getElementById('cameraVideo');
 const captureCanvas = document.getElementById('captureCanvas');
 const captureBtn = document.getElementById('captureBtn');
+const captureBtnIcon = document.getElementById('captureBtnIcon');
+const captureBtnText = document.getElementById('captureBtnText');
 const fileInput = document.getElementById('fileInput');
 const timelineTrack = document.getElementById('timelineTrack');
 const playBtn = document.getElementById('playBtn');
@@ -90,8 +93,6 @@ function updateViewport() {
     if (isPlaying) return;
 
     const modeText = document.getElementById('modeText');
-    const captureBtnIcon = document.getElementById('captureBtnIcon');
-    const captureBtnText = document.getElementById('captureBtnText');
 
     if (selectedTool === 'camera') {
         modeText.textContent = 'Kamera';
@@ -137,6 +138,7 @@ function captureFrame() {
     const ctx = captureCanvas.getContext('2d');
     captureCanvas.width = cameraVideo.videoWidth;
     captureCanvas.height = cameraVideo.videoHeight;
+    ctx.clearRect(0, 0, captureCanvas.width, captureCanvas.height);
     ctx.drawImage(cameraVideo, 0, 0);
     const imageData = captureCanvas.toDataURL('image/png');
     addFrame(imageData);
@@ -191,6 +193,12 @@ fileInput.addEventListener('change', function(e) {
  * @param {string} imageData - Base64-kodiertes Bild
  */
 function addFrame(imageData) {
+    // Frame-Limit prüfen (Memory Protection)
+    if (frames.length >= MAX_FRAMES) {
+        alert(`Maximale Anzahl von ${MAX_FRAMES} Frames erreicht. Bitte exportiere oder lösche Frames.`);
+        return;
+    }
+
     const frame = {
         id: Date.now().toString(),
         imageData: imageData,
@@ -223,18 +231,23 @@ function deleteFrame(id) {
  * @param {string} id - Eindeutige ID des zu duplizierenden Frames
  */
 function duplicateFrame(id) {
-    const frame = frames.find(f => f.id === id);
-    if (frame) {
-        const newFrame = {
-            id: Date.now().toString(),
-            imageData: frame.imageData,
-            timestamp: Date.now()
-        };
-        const index = frames.findIndex(f => f.id === id);
-        frames.splice(index + 1, 0, newFrame);
-        updateTimeline();
-        updateProperties();
+    const index = frames.findIndex(f => f.id === id);
+    if (index === -1) {
+        console.error('Frame nicht gefunden:', id);
+        return;
     }
+
+    const frame = frames[index];
+    const newFrame = {
+        id: Date.now().toString(),
+        imageData: frame.imageData,
+        timestamp: Date.now()
+    };
+    frames.splice(index + 1, 0, newFrame);
+    currentFrameIndex = index + 1; // Neues Frame auswählen
+    updateTimeline();
+    updateProperties();
+    updateOnionSkin();
 }
 
 // ========================================
@@ -362,6 +375,19 @@ stopBtn.addEventListener('click', stopPlayback);
  */
 function startPlayback() {
     if (frames.length === 0) return;
+
+    // Sinnlos, nur 1 Frame abzuspielen
+    if (frames.length === 1) {
+        alert('Mindestens 2 Frames benötigt für Wiedergabe');
+        return;
+    }
+
+    // Cleanup existierendes Intervall (Memory Leak Prevention)
+    if (playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+    }
+
     isPlaying = true;
     currentFrameIndex = 0;
     playBtn.textContent = '⏸️';
@@ -394,7 +420,10 @@ function startPlayback() {
  */
 function pausePlayback() {
     isPlaying = false;
-    clearInterval(playbackInterval);
+    if (playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+    }
     playBtn.textContent = '▶️';
 }
 
@@ -418,7 +447,9 @@ function stopPlayback() {
 function updatePlaybackFrame() {
     if (currentFrameIndex >= 0 && currentFrameIndex < frames.length) {
         playbackImage.src = frames[currentFrameIndex].imageData;
-        updateTimeline();
+        // Nur Frame-Info aktualisieren, nicht ganze Timeline (Performance)
+        document.getElementById('frameInfo').textContent = `Frame ${currentFrameIndex + 1} / ${frames.length}`;
+        document.getElementById('currentFrameNum').textContent = currentFrameIndex + 1;
     }
 }
 
@@ -432,6 +463,18 @@ document.getElementById('fpsSlider').addEventListener('input', function() {
     document.getElementById('fpsValue').textContent = fps;
     updateFpsPresets();
     updateProperties();
+
+    // Wenn Wiedergabe läuft, Intervall mit neuer FPS neu starten
+    if (isPlaying && playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = setInterval(() => {
+            currentFrameIndex++;
+            if (currentFrameIndex >= frames.length) {
+                currentFrameIndex = 0;
+            }
+            updatePlaybackFrame();
+        }, 1000 / fps);
+    }
 });
 
 // Event Listener für FPS-Preset-Buttons
@@ -488,6 +531,11 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
         return;
     }
 
+    // Export-Button während des Exports deaktivieren
+    const exportBtn = this;
+    const originalText = exportBtn.textContent;
+    exportBtn.disabled = true;
+
     try {
         // Canvas für Rendering erstellen
         const canvas = document.createElement('canvas');
@@ -501,6 +549,7 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
         // MediaRecorder-Support prüfen
         if (!window.MediaRecorder) {
             alert('Dein Browser unterstützt kein Video-Export. Bitte verwende Chrome, Firefox oder Edge.');
+            exportBtn.disabled = false;
             return;
         }
 
@@ -535,13 +584,20 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            // Export abgeschlossen
+            exportBtn.textContent = originalText;
+            exportBtn.disabled = false;
         };
 
         mediaRecorder.start();
 
-        // Frames rendern
+        // Frames rendern mit Fortschrittsanzeige
         const frameDelay = 1000 / fps;
         for (let i = 0; i < frames.length; i++) {
+            // Fortschritt anzeigen
+            exportBtn.textContent = `💾 ${Math.round((i / frames.length) * 100)}%`;
+
             await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
@@ -556,14 +612,17 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
             });
         }
 
-        // Aufnahme nach allen Frames stoppen
-        setTimeout(() => {
-            mediaRecorder.stop();
-        }, 100);
+        // Warte auf letztes Frame + zusätzliche Pufferzeit
+        const additionalDelay = Math.max(500, frameDelay * 2);
+        await new Promise(resolve => setTimeout(resolve, additionalDelay));
+
+        mediaRecorder.stop();
 
     } catch (error) {
         console.error('Export error:', error);
         alert('Fehler beim Exportieren: ' + error.message);
+        exportBtn.textContent = originalText;
+        exportBtn.disabled = false;
     }
 });
 
@@ -707,3 +766,123 @@ try {
     console.warn('Theme konnte nicht geladen werden:', error);
 }
 setTheme(savedTheme);
+
+// ========================================
+// Keyboard Shortcuts
+// ========================================
+document.addEventListener('keydown', function(e) {
+    // Ignoriere Shortcuts wenn Modal offen ist
+    if (document.querySelector('.modal[style*="display: flex"]')) return;
+
+    // Space: Play/Pause (außer wenn in Input-Feld)
+    if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        if (frames.length > 1) {
+            playBtn.click();
+        }
+    }
+
+    // Delete: Aktuelles Frame löschen
+    if (e.code === 'Delete' && currentFrameIndex >= 0 && !isPlaying) {
+        e.preventDefault();
+        const frame = frames[currentFrameIndex];
+        if (frame) {
+            deleteFrame(frame.id);
+        }
+    }
+
+    // ArrowLeft: Vorheriges Frame
+    if (e.code === 'ArrowLeft' && !isPlaying && frames.length > 0) {
+        e.preventDefault();
+        if (currentFrameIndex > 0) {
+            currentFrameIndex--;
+            updateTimeline();
+            updateOnionSkin();
+            updateProperties();
+        }
+    }
+
+    // ArrowRight: Nächstes Frame
+    if (e.code === 'ArrowRight' && !isPlaying && frames.length > 0) {
+        e.preventDefault();
+        if (currentFrameIndex < frames.length - 1) {
+            currentFrameIndex++;
+            updateTimeline();
+            updateOnionSkin();
+            updateProperties();
+        }
+    }
+
+    // C: Capture/Aufnehmen
+    if (e.code === 'KeyC' && !e.ctrlKey && !isPlaying && captureBtn.style.display !== 'none') {
+        e.preventDefault();
+        captureBtn.click();
+    }
+
+    // O: Onion Skin Toggle
+    if (e.code === 'KeyO' && !e.ctrlKey) {
+        e.preventDefault();
+        document.getElementById('onionToggle').click();
+    }
+});
+
+// ========================================
+// Drag & Drop Support
+// ========================================
+const viewport = document.querySelector('.viewport');
+
+// Verhindere Standard-Drag-Verhalten
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    viewport.addEventListener(eventName, function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+});
+
+// Visuelles Feedback beim Drag
+['dragenter', 'dragover'].forEach(eventName => {
+    viewport.addEventListener(eventName, function() {
+        if (!isPlaying) {
+            this.style.outline = '3px dashed #2563eb';
+        }
+    });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    viewport.addEventListener(eventName, function() {
+        this.style.outline = '';
+    });
+});
+
+// Drop-Handler
+viewport.addEventListener('drop', function(e) {
+    if (isPlaying) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+        alert('Bitte nur Bilddateien hochladen (PNG, JPG, etc.)');
+        return;
+    }
+
+    imageFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (ev) => addFrame(ev.target.result);
+        reader.readAsDataURL(file);
+    });
+});
+
+// ========================================
+// Cleanup on Page Unload
+// ========================================
+window.addEventListener('beforeunload', function() {
+    // Kamera-Stream stoppen
+    stopCamera();
+
+    // Playback-Intervall cleanen
+    if (playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+    }
+});
