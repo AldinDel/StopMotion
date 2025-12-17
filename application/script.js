@@ -16,6 +16,8 @@ let autoCaptureInterval = null;     // Intervall für Auto-Capture
 let autoCaptureTimeoutId = null;    // Timeout für Auto-Capture-Ende
 let isAutoCapturing = false;        // Status: Auto-Capture läuft
 let autoCaptureStartFrames = 0;     // Anzahl Frames beim Start des Auto-Capture
+let draggedFrameIndex = null;       // Index des aktuell gedraggten Frames
+let dropTargetIndex = null;         // Index des Drop-Ziels
 
 // ========================================
 // DOM Elements
@@ -386,9 +388,11 @@ function updateTimeline() {
     document.getElementById('clearBtn').disabled = false;
 
     timelineTrack.innerHTML = frames.map((frame, index) => `
-            <div class="frame-item ${currentFrameIndex === index ? 'active' : ''}" data-index="${index}">
+            <div class="frame-item ${currentFrameIndex === index ? 'active' : ''}"
+                 data-index="${index}"
+                 draggable="true">
                 <div class="frame-thumbnail">
-                    <img src="${frame.imageData}" alt="Frame ${index + 1}">
+                    <img src="${frame.imageData}" alt="Frame ${index + 1}" draggable="false">
                 </div>
                 <div class="frame-number">#${index + 1}</div>
                 ${currentFrameIndex === index ? '<div class="playhead"></div>' : ''}
@@ -396,6 +400,7 @@ function updateTimeline() {
                     <button class="frame-action-btn duplicate" data-frame-id="${frame.id}">📋</button>
                     <button class="frame-action-btn delete" data-frame-id="${frame.id}">❌</button>
                 </div>
+                <div class="drag-handle">⋮⋮</div>
             </div>
         `).join('');
 
@@ -430,10 +435,92 @@ function updateTimeline() {
         });
     });
 
+    // Drag & Drop Event-Listener für Frame-Umsortierung
+    document.querySelectorAll('.frame-item').forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+        item.addEventListener('dragend', handleDragEnd);
+    });
+
     // Frame-Zähler aktualisieren
     document.getElementById('currentFrameNum').textContent = currentFrameIndex + 1;
     document.getElementById('totalFrames').textContent = frames.length;
     document.getElementById('frameInfo').textContent = `Frame ${currentFrameIndex + 1} / ${frames.length}`;
+}
+
+// ========================================
+// Drag & Drop Functions für Frame-Reordering
+// ========================================
+
+function handleDragStart(e) {
+    draggedFrameIndex = parseInt(this.dataset.index);
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    if (draggedFrameIndex === null) return;
+    const targetIndex = parseInt(this.dataset.index);
+    if (targetIndex !== draggedFrameIndex) {
+        this.classList.add('drag-over');
+        dropTargetIndex = targetIndex;
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+
+    if (draggedFrameIndex !== null && dropTargetIndex !== null && draggedFrameIndex !== dropTargetIndex) {
+        // Frame aus alter Position entfernen
+        const draggedFrame = frames[draggedFrameIndex];
+
+        // Frame-Array neu sortieren
+        frames.splice(draggedFrameIndex, 1);
+        frames.splice(dropTargetIndex, 0, draggedFrame);
+
+        // CurrentFrameIndex anpassen
+        if (currentFrameIndex === draggedFrameIndex) {
+            currentFrameIndex = dropTargetIndex;
+        } else if (draggedFrameIndex < currentFrameIndex && dropTargetIndex >= currentFrameIndex) {
+            currentFrameIndex--;
+        } else if (draggedFrameIndex > currentFrameIndex && dropTargetIndex <= currentFrameIndex) {
+            currentFrameIndex++;
+        }
+
+        // UI aktualisieren
+        updateTimeline();
+        updateProperties();
+        updateOnionSkin();
+    }
+
+    return false;
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    document.querySelectorAll('.frame-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+    draggedFrameIndex = null;
+    dropTargetIndex = null;
 }
 
 /**

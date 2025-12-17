@@ -14,6 +14,7 @@ Eine moderne Web-Anwendung zur Erstellung von Stop-Motion-Animationen direkt im 
 - 🎨 **Themes**: Hell, Grau und Dunkel
 - ⌨️ **Keyboard Shortcuts**: Schnellere Bedienung per Tastatur
 - 🖱️ **Drag & Drop**: Ziehe Bilder direkt in die App
+- 🔄 **Frame-Reordering**: Verschiebe Frames per Drag & Drop in der Timeline
 
 ## Auto-Capture Modus
 
@@ -24,6 +25,19 @@ Der Auto-Capture-Modus nimmt automatisch Frames für dich auf:
 - **Stopp**: Jederzeit manuell abbrechbar
 
 Perfekt für gleichmäßige Stop-Motion-Aufnahmen!
+
+## Frame-Reordering
+
+Frames können in der Timeline per Drag & Drop neu angeordnet werden:
+1. **Hover** über ein Frame - das Drag-Handle (⋮⋮) erscheint
+2. **Klicken und Halten** auf dem Frame
+3. **Ziehen** zur gewünschten Position
+4. **Loslassen** - Frame wird an neuer Position eingefügt
+
+**Visuelles Feedback:**
+- Gezogenes Frame wird halbtransparent
+- Drop-Ziel wird größer mit blauem gestricheltem Rand
+- Cursor ändert sich zu "grabbing"
 
 ## Keyboard Shortcuts
 
