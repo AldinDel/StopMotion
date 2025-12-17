@@ -12,6 +12,10 @@ let selectedTool = 'camera';        // Aktuell ausgewähltes Werkzeug (camera/up
 let playbackInterval = null;        // Intervall für die Wiedergabe-Animation
 let stream = null;                  // MediaStream für Kamera-Video
 const MAX_FRAMES = 500;             // Maximale Anzahl von Frames (Memory Protection)
+let autoCaptureInterval = null;     // Intervall für Auto-Capture
+let autoCaptureTimeoutId = null;    // Timeout für Auto-Capture-Ende
+let isAutoCapturing = false;        // Status: Auto-Capture läuft
+let autoCaptureStartFrames = 0;     // Anzahl Frames beim Start des Auto-Capture
 
 // ========================================
 // DOM Elements
@@ -22,6 +26,8 @@ const captureCanvas = document.getElementById('captureCanvas');
 const captureBtn = document.getElementById('captureBtn');
 const captureBtnIcon = document.getElementById('captureBtnIcon');
 const captureBtnText = document.getElementById('captureBtnText');
+const autoCaptureBtn = document.getElementById('autoCaptureBtn');
+const autoCaptureStatus = document.getElementById('autoCaptureStatus');
 const fileInput = document.getElementById('fileInput');
 const timelineTrack = document.getElementById('timelineTrack');
 const playBtn = document.getElementById('playBtn');
@@ -87,8 +93,10 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
  */
 function updateViewport() {
     stopCamera();
+    stopAutoCapture(); // Auto-Capture beenden bei Werkzeugwechsel
     document.querySelectorAll('.placeholder').forEach(p => p.style.display = 'none');
     captureBtn.style.display = 'none';
+    autoCaptureBtn.style.display = 'none';
 
     if (isPlaying) return;
 
@@ -100,6 +108,7 @@ function updateViewport() {
         captureBtnIcon.style.display = '';
         captureBtnIcon.textContent = '📷';
         captureBtnText.textContent = 'Aufnehmen';
+        autoCaptureBtn.style.display = 'flex'; // Auto-Button nur im Kamera-Modus
     } else if (selectedTool === 'upload') {
         modeText.textContent = 'Upload';
         document.getElementById('placeholderUpload').style.display = 'flex';
@@ -182,6 +191,109 @@ fileInput.addEventListener('change', function(e) {
         }
     });
     fileInput.value = '';
+});
+
+// ========================================
+// Auto-Capture Functions
+// ========================================
+
+/**
+ * Startet den Auto-Capture-Modus
+ * Nimmt 30 Sekunden lang alle 0,5 Sekunden automatisch ein Frame auf
+ */
+function startAutoCapture() {
+    if (isAutoCapturing) return;
+    if (!stream || selectedTool !== 'camera') {
+        alert('Bitte aktiviere zuerst die Kamera');
+        return;
+    }
+
+    isAutoCapturing = true;
+    autoCaptureStartFrames = frames.length;
+
+    // Button-Status aktualisieren
+    autoCaptureBtn.textContent = '⏹️ Stopp';
+    autoCaptureBtn.classList.add('active');
+    captureBtn.disabled = true;
+
+    // Status-Anzeige einblenden
+    autoCaptureStatus.style.display = 'block';
+
+    let elapsedSeconds = 0;
+    const totalSeconds = 30;
+    const captureIntervalMs = 500; // 0,5 Sekunden
+
+    // Sofort erstes Frame aufnehmen
+    captureFrame();
+
+    // Status aktualisieren
+    function updateStatus() {
+        const remainingSeconds = totalSeconds - elapsedSeconds;
+        const capturedFrames = frames.length - autoCaptureStartFrames;
+        autoCaptureStatus.textContent = `🔴 Auto-Aufnahme läuft: ${capturedFrames} Frames | ${remainingSeconds}s verbleibend`;
+    }
+
+    updateStatus();
+
+    // Alle 0,5 Sekunden ein Frame aufnehmen
+    autoCaptureInterval = setInterval(() => {
+        if (frames.length >= MAX_FRAMES) {
+            stopAutoCapture();
+            alert('Maximale Frame-Anzahl erreicht. Auto-Capture gestoppt.');
+            return;
+        }
+
+        captureFrame();
+        elapsedSeconds += captureIntervalMs / 1000;
+        updateStatus();
+    }, captureIntervalMs);
+
+    // Nach 30 Sekunden automatisch stoppen
+    autoCaptureTimeoutId = setTimeout(() => {
+        stopAutoCapture();
+        const capturedFrames = frames.length - autoCaptureStartFrames;
+        alert(`✅ Auto-Capture abgeschlossen!\n\n${capturedFrames} Frames in 30 Sekunden aufgenommen.`);
+    }, totalSeconds * 1000);
+}
+
+/**
+ * Stoppt den Auto-Capture-Modus
+ */
+function stopAutoCapture() {
+    if (!isAutoCapturing) return;
+
+    isAutoCapturing = false;
+
+    // Intervall und Timeout cleanen
+    if (autoCaptureInterval) {
+        clearInterval(autoCaptureInterval);
+        autoCaptureInterval = null;
+    }
+    if (autoCaptureTimeoutId) {
+        clearTimeout(autoCaptureTimeoutId);
+        autoCaptureTimeoutId = null;
+    }
+
+    // Button-Status zurücksetzen
+    autoCaptureBtn.textContent = '🤖 Auto';
+    autoCaptureBtn.classList.remove('active');
+    captureBtn.disabled = false;
+
+    // Status-Anzeige ausblenden
+    autoCaptureStatus.style.display = 'none';
+    autoCaptureStatus.textContent = '';
+}
+
+// Event Listener für Auto-Capture-Button
+autoCaptureBtn.addEventListener('click', function() {
+    if (isAutoCapturing) {
+        const capturedFrames = frames.length - autoCaptureStartFrames;
+        if (confirm(`Auto-Capture wirklich stoppen?\n\nBisher ${capturedFrames} Frames aufgenommen.`)) {
+            stopAutoCapture();
+        }
+    } else {
+        startAutoCapture();
+    }
 });
 
 // ========================================
@@ -824,6 +936,12 @@ document.addEventListener('keydown', function(e) {
         e.preventDefault();
         document.getElementById('onionToggle').click();
     }
+
+    // A: Auto-Capture Toggle (nur im Kamera-Modus)
+    if (e.code === 'KeyA' && !e.ctrlKey && selectedTool === 'camera') {
+        e.preventDefault();
+        autoCaptureBtn.click();
+    }
 });
 
 // ========================================
@@ -879,6 +997,9 @@ viewport.addEventListener('drop', function(e) {
 window.addEventListener('beforeunload', function() {
     // Kamera-Stream stoppen
     stopCamera();
+
+    // Auto-Capture stoppen
+    stopAutoCapture();
 
     // Playback-Intervall cleanen
     if (playbackInterval) {

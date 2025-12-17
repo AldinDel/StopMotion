@@ -5,6 +5,7 @@ Eine moderne Web-Anwendung zur Erstellung von Stop-Motion-Animationen direkt im 
 ## Features
 
 - 📷 **Kamera-Aufnahme**: Nutze deine Webcam für Live-Aufnahmen
+- 🤖 **Auto-Capture**: Automatische Aufnahme (60 Frames in 30 Sekunden)
 - 📤 **Datei-Upload**: Importiere Bilder von deinem Computer
 - ✨ **Demo-Modus**: Teste die App mit generierten Demo-Frames
 - 👁️ **Onion Skinning**: Sieh das vorherige Frame transparent überlagert
@@ -14,12 +15,23 @@ Eine moderne Web-Anwendung zur Erstellung von Stop-Motion-Animationen direkt im 
 - ⌨️ **Keyboard Shortcuts**: Schnellere Bedienung per Tastatur
 - 🖱️ **Drag & Drop**: Ziehe Bilder direkt in die App
 
+## Auto-Capture Modus
+
+Der Auto-Capture-Modus nimmt automatisch Frames für dich auf:
+- **Dauer**: 30 Sekunden
+- **Intervall**: Alle 0,5 Sekunden (= 60 Frames insgesamt)
+- **Anzeige**: Live-Countdown und Frame-Zähler
+- **Stopp**: Jederzeit manuell abbrechbar
+
+Perfekt für gleichmäßige Stop-Motion-Aufnahmen!
+
 ## Keyboard Shortcuts
 
 - **Space**: Play/Pause
 - **←/→**: Zwischen Frames navigieren
 - **Delete**: Aktuelles Frame löschen
 - **C**: Frame aufnehmen
+- **A**: Auto-Capture starten/stoppen (nur Kamera-Modus)
 - **O**: Onion Skinning ein/aus
 
 ## Installation & Start

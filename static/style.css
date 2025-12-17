@@ -274,6 +274,75 @@ body {
     transform: scale(1.05);
 }
 
+.auto-capture-btn {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 9999px;
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.5);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    transition: all 0.3s;
+    z-index: 20;
+}
+
+.auto-capture-btn:hover {
+    background: #1d4ed8;
+    transform: scale(1.05);
+}
+
+.auto-capture-btn.active {
+    background: #dc2626;
+    animation: pulse 2s infinite;
+}
+
+.auto-capture-btn.active:hover {
+    background: #b91c1c;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 10px 15px -3px rgba(220, 38, 38, 0.5);
+    }
+    50% {
+        box-shadow: 0 10px 20px -3px rgba(220, 38, 38, 0.8);
+    }
+}
+
+.auto-capture-status {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    z-index: 25;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
 .upload-btn-primary {
     background: #2563eb;
     color: white;
@@ -933,6 +1002,11 @@ body.theme-dark .theme-option span {
     color: #cbd5e1;
 }
 
+body.theme-dark .auto-capture-status {
+    background: rgba(30, 41, 59, 0.95);
+    color: #f1f5f9;
+}
+
 /* Grey Theme */
 body.theme-grey {
     background: #6b7280;
@@ -1030,4 +1104,9 @@ body.theme-grey .theme-option.active {
 
 body.theme-grey .theme-option span {
     color: #f3f4f6;
+}
+
+body.theme-grey .auto-capture-status {
+    background: rgba(107, 114, 128, 0.95);
+    color: white;
 }
