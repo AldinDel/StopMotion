@@ -202,8 +202,28 @@ body {
     background: white;
     border-radius: 12px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     border: 2px solid #e5e7eb;
+}
+
+/* Scrollbar Styling */
+.viewport-canvas::-webkit-scrollbar {
+    width: 10px;
+}
+
+.viewport-canvas::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 0 12px 12px 0;
+}
+
+.viewport-canvas::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 10px;
+}
+
+.viewport-canvas::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
 }
 
 .viewport-canvas video,
@@ -1028,6 +1048,18 @@ body.theme-dark .auto-capture-status {
     color: #f1f5f9;
 }
 
+body.theme-dark .viewport-canvas::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+body.theme-dark .viewport-canvas::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+body.theme-dark .viewport-canvas::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
 /* Grey Theme */
 body.theme-grey {
     background: #6b7280;
@@ -1134,4 +1166,16 @@ body.theme-grey .theme-option span {
 body.theme-grey .auto-capture-status {
     background: rgba(107, 114, 128, 0.95);
     color: white;
+}
+
+body.theme-grey .viewport-canvas::-webkit-scrollbar-track {
+    background: #6b7280;
+}
+
+body.theme-grey .viewport-canvas::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+}
+
+body.theme-grey .viewport-canvas::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
 }
