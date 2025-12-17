@@ -49,7 +49,7 @@
                     <div class="placeholder-icon">📤</div>
                     <div class="placeholder-title">Bilder hochladen</div>
                     <div class="placeholder-subtitle">Wähle Bilder von deinem Computer</div>
-                    <button class="upload-btn-primary" onclick="document.getElementById('fileInput').click()">Dateien auswählen</button>
+                    <button class="upload-btn-primary" id="uploadBtnPrimary">Dateien auswählen</button>
                 </div>
 
                 <div id="placeholderDemo" class="placeholder demo" style="display: none;">
@@ -159,7 +159,7 @@
         <div class="modal-icon">⚠️</div>
         <h2 class="modal-title">Keine Frames vorhanden</h2>
         <p class="modal-message">Sie müssen mindestens ein Frame erstellen, bevor Sie exportieren können.</p>
-        <button class="modal-btn" onclick="closeErrorModal()">Verstanden</button>
+        <button class="modal-btn" id="closeErrorModalBtn">Verstanden</button>
     </div>
 </div>
 
@@ -169,7 +169,7 @@
         <div class="modal-icon">ℹ️</div>
         <h2 class="modal-title">Keine Frames zum Löschen</h2>
         <p class="modal-message">Es sind keine Frames vorhanden, die gelöscht werden könnten.</p>
-        <button class="modal-btn" onclick="closeNoFramesModal()">Verstanden</button>
+        <button class="modal-btn" id="closeNoFramesModalBtn">Verstanden</button>
     </div>
 </div>
 
@@ -180,8 +180,8 @@
         <h2 class="modal-title">Wirklich alle Frames löschen?</h2>
         <p class="modal-message">Diese Aktion kann nicht rückgängig gemacht werden. Alle Frames werden permanent gelöscht.</p>
         <div class="modal-buttons">
-            <button class="modal-btn modal-btn-secondary" onclick="closeConfirmDeleteModal()">Abbrechen</button>
-            <button class="modal-btn modal-btn-danger" onclick="confirmDelete()">Löschen</button>
+            <button class="modal-btn modal-btn-secondary" id="cancelDeleteBtn">Abbrechen</button>
+            <button class="modal-btn modal-btn-danger" id="confirmDeleteBtn">Löschen</button>
         </div>
     </div>
 </div>
@@ -195,22 +195,22 @@
         <div class="settings-section">
             <h3 class="settings-label">Farbmodus</h3>
             <div class="theme-options">
-                <button class="theme-option active" data-theme="light" onclick="setTheme('light')">
+                <button class="theme-option active" data-theme="light">
                     <div class="theme-preview theme-preview-light"></div>
                     <span>Hell</span>
                 </button>
-                <button class="theme-option" data-theme="grey" onclick="setTheme('grey')">
+                <button class="theme-option" data-theme="grey">
                     <div class="theme-preview theme-preview-grey"></div>
                     <span>Grau</span>
                 </button>
-                <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+                <button class="theme-option" data-theme="dark">
                     <div class="theme-preview theme-preview-dark"></div>
                     <span>Dunkel</span>
                 </button>
             </div>
         </div>
 
-        <button class="modal-btn" onclick="closeSettingsModal()" style="margin-top: 24px;">Schließen</button>
+        <button class="modal-btn" id="closeSettingsModalBtn" style="margin-top: 24px;">Schließen</button>
     </div>
 </div>
 

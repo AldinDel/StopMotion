@@ -268,21 +268,40 @@ function updateTimeline() {
                 <div class="frame-number">#${index + 1}</div>
                 ${currentFrameIndex === index ? '<div class="playhead"></div>' : ''}
                 <div class="frame-actions">
-                    <button class="frame-action-btn duplicate" onclick="duplicateFrame('${frame.id}')">📋</button>
-                    <button class="frame-action-btn delete" onclick="deleteFrame('${frame.id}')">❌</button>
+                    <button class="frame-action-btn duplicate" data-frame-id="${frame.id}">📋</button>
+                    <button class="frame-action-btn delete" data-frame-id="${frame.id}">❌</button>
                 </div>
             </div>
         `).join('');
 
     // Click-Listener für Frame-Auswahl
     document.querySelectorAll('.frame-item').forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function(e) {
+            // Ignoriere Klicks auf Action-Buttons
+            if (e.target.closest('.frame-action-btn')) return;
+
             if (!isPlaying) {
                 currentFrameIndex = parseInt(this.dataset.index);
                 updateTimeline();
                 updateOnionSkin();
                 updateProperties();
             }
+        });
+    });
+
+    // Event-Listener für Duplicate-Buttons
+    document.querySelectorAll('.frame-action-btn.duplicate').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            duplicateFrame(this.dataset.frameId);
+        });
+    });
+
+    // Event-Listener für Delete-Buttons
+    document.querySelectorAll('.frame-action-btn.delete').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            deleteFrame(this.dataset.frameId);
         });
     });
 
@@ -307,11 +326,15 @@ function updateProperties() {
  * Zeigt das vorherige Frame transparent über dem aktuellen
  */
 function updateOnionSkin() {
-    if (showOnionSkin && currentFrameIndex > 0 && !isPlaying) {
+    if (showOnionSkin && currentFrameIndex > 0 && !isPlaying && frames.length > 0) {
         const prevFrame = frames[currentFrameIndex - 1];
-        onionSkinImg.src = prevFrame.imageData;
-        onionSkinImg.style.opacity = onionSkinOpacity;
-        onionSkinImg.style.display = 'block';
+        if (prevFrame && prevFrame.imageData) {
+            onionSkinImg.src = prevFrame.imageData;
+            onionSkinImg.style.opacity = onionSkinOpacity;
+            onionSkinImg.style.display = 'block';
+        } else {
+            onionSkinImg.style.display = 'none';
+        }
     } else {
         onionSkinImg.style.display = 'none';
     }
@@ -473,9 +496,25 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
         const ctx = canvas.getContext('2d');
 
         // Video-Stream vom Canvas erstellen
-        const stream = canvas.captureStream(fps);
-        const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9',
+        const canvasStream = canvas.captureStream(fps);
+
+        // MediaRecorder-Support prüfen
+        if (!window.MediaRecorder) {
+            alert('Dein Browser unterstützt kein Video-Export. Bitte verwende Chrome, Firefox oder Edge.');
+            return;
+        }
+
+        // VP9 Codec-Support prüfen, fallback auf VP8
+        let mimeType = 'video/webm;codecs=vp9';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/webm;codecs=vp8';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = 'video/webm';
+            }
+        }
+
+        const mediaRecorder = new MediaRecorder(canvasStream, {
+            mimeType: mimeType,
             videoBitsPerSecond: 5000000
         });
 
@@ -503,12 +542,15 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
         // Frames rendern
         const frameDelay = 1000 / fps;
         for (let i = 0; i < frames.length; i++) {
-            await new Promise((resolve) => {
+            await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     setTimeout(resolve, frameDelay);
+                };
+                img.onerror = () => {
+                    reject(new Error(`Frame ${i + 1} konnte nicht geladen werden`));
                 };
                 img.src = frames[i].imageData;
             });
@@ -580,6 +622,17 @@ function confirmDelete() {
     closeConfirmDeleteModal();
 }
 
+// Event Listener für Modal-Buttons
+document.getElementById('closeErrorModalBtn').addEventListener('click', closeErrorModal);
+document.getElementById('closeNoFramesModalBtn').addEventListener('click', closeNoFramesModal);
+document.getElementById('cancelDeleteBtn').addEventListener('click', closeConfirmDeleteModal);
+document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+
+// Event Listener für Upload-Button im Placeholder
+document.getElementById('uploadBtnPrimary').addEventListener('click', function() {
+    fileInput.click();
+});
+
 // ========================================
 // Settings Functions
 // ========================================
@@ -621,8 +674,22 @@ function setTheme(theme) {
     });
 
     // Theme in localStorage speichern
-    localStorage.setItem('theme', theme);
+    try {
+        localStorage.setItem('theme', theme);
+    } catch (error) {
+        console.warn('Theme konnte nicht gespeichert werden:', error);
+    }
 }
+
+// Event Listener für Theme-Options
+document.querySelectorAll('.theme-option').forEach(btn => {
+    btn.addEventListener('click', function() {
+        setTheme(this.dataset.theme);
+    });
+});
+
+// Event Listener für Settings-Modal schließen
+document.getElementById('closeSettingsModalBtn').addEventListener('click', closeSettingsModal);
 
 // ========================================
 // Initialization
@@ -633,5 +700,10 @@ updateViewport();
 updateProperties();
 
 // Gespeichertes Theme laden
-const savedTheme = localStorage.getItem('theme') || 'light';
+let savedTheme = 'light';
+try {
+    savedTheme = localStorage.getItem('theme') || 'light';
+} catch (error) {
+    console.warn('Theme konnte nicht geladen werden:', error);
+}
 setTheme(savedTheme);
